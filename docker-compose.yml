@@ -1,0 +1,202 @@
+version: '3.6'
+services:
+  auth-mongo:
+    container_name: clarity-test-task-auth-mongo
+    image: mongo:4.4
+    entrypoint:
+      - bash
+      - -c
+      - |
+        cp /config/mongo-keyfile /config/keyfile
+        chmod 400 /config/keyfile
+        chown mongodb -R /config/keyfile
+        exec docker-entrypoint.sh $$@
+    command: mongod --replSet rs --bind_ip_all --keyFile config/keyfile --quiet --logpath /dev/null
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
+    networks:
+      - clarity-test-task
+    ports:
+      - 3000:27017
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./apps/api/src/config/mongo-keyfile:/config/mongo-keyfile
+      - type: volume
+        source: mongodb
+        target: /data/db
+      - type: volume
+        source: mongodb-cfg
+        target: /data/configdb
+  api-mongo:
+    container_name: clarity-test-task-api-mongo
+    image: mongo:4.4
+    entrypoint:
+      - bash
+      - -c
+      - |
+        cp /config/mongo-keyfile /config/keyfile
+        chmod 400 /config/keyfile
+        chown mongodb -R /config/keyfile
+        exec docker-entrypoint.sh $$@
+    command: mongod --replSet rs --bind_ip_all --keyFile config/keyfile --quiet --logpath /dev/null
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
+    networks:
+      - clarity-test-task
+    ports:
+      - 4000:27017
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./apps/api/src/config/mongo-keyfile:/config/mongo-keyfile
+      - type: volume
+        source: mongodb
+        target: /data/db
+      - type: volume
+        source: mongodb-cfg
+        target: /data/configdb
+  auth:
+    container_name: clarity-test-task-api
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+      target: runner
+      args:
+        NODE_ENV: production
+        APP_ENV: production
+        MONGO_URI: mongodb+srv://alexey-gerasimchuk:EXseVTMMo7kDZsCy@clarity-test-task.nw4gxnq.mongodb.net/?retryWrites=true&w=majority&appName=AtlasApp
+        MONGO_DB_NAME: clarity-test-task
+        REDIS_URI: redis://default:1HDE3BEMkBrZrbmoJPXTEN9AflMqcAVP@redis-10064.c250.eu-central-1-1.ec2.cloud.redislabs.com:10064
+        API_URL: https://api.ship-test-task.cluster.ws
+        WEB_URL: https://web.ship-test-task.cluster.ws
+        STRIPE_PUBLISHABLE_KEY: pk_test_51NsOwQF7lgekW04Hbap13yStIKr3P4uReINw37aPggrcaqP7DRhGlXOwZ9LdOwVn8QmBdPyOGKjB04lnz5HbwkTr00jPdLrn6e
+        STRIPE_SECRET_KEY: sk_test_51NsOwQF7lgekW04HKyx60dllaMAPrUZiMzuJbdwAJ01ryA4kvieyPOuULdLjEFVokkFbGxioKnG5G5z4sJlScO5I00MW9Nzc0m
+        STRIPE_ENDPOINT_SECRET: whsec_3e023fc3ce3195c0b7919a81d52e310418ac1490017f8610a9747c332233aa86
+        FIREBASE_API_KEY: AIzaSyCGRkGovgvVU53g5QyoxYIXIO5_whzYXds
+        FIREBASE_AUTH_DOMAIN: clarity-test-task.firebaseapp.com
+        FIREBASE_PROJECT_ID: clarity-test-task
+        FIREBASE_STORAGE_BUCKET: gs://clarity-test-task.appspot.com/
+        FIREBASE_MESSAGING_SENDER_ID: 494256166544
+        FIREBASE_APP_ID: 1:494256166544:web:8706cd9db72c50271d2a15
+        FIREBASE_MEASUREMENT_ID: G-H9FNFJY2X5
+    environment:
+      - MONGO_URI=mongodb+srv://alexey-gerasimchuk:EXseVTMMo7kDZsCy@clarity-test-task.nw4gxnq.mongodb.net/?retryWrites=true&w=majority&appName=AtlasApp
+      - MONGO_DB_NAME=clarity-test-task
+      - REDIS_URI=redis://default:1HDE3BEMkBrZrbmoJPXTEN9AflMqcAVP@redis-10064.c250.eu-central-1-1.ec2.cloud.redislabs.com:10064
+      - API_URL=http://localhost:3001
+      - WEB_URL=http://localhost:3002
+      - STRIPE_PUBLISHABLE_KEY=pk_test_51NsOwQF7lgekW04Hbap13yStIKr3P4uReINw37aPggrcaqP7DRhGlXOwZ9LdOwVn8QmBdPyOGKjB04lnz5HbwkTr00jPdLrn6e
+      - STRIPE_SECRET_KEY=sk_test_51NsOwQF7lgekW04HKyx60dllaMAPrUZiMzuJbdwAJ01ryA4kvieyPOuULdLjEFVokkFbGxioKnG5G5z4sJlScO5I00MW9Nzc0m
+      - STRIPE_ENDPOINT_SECRET=whsec_3e023fc3ce3195c0b7919a81d52e310418ac1490017f8610a9747c332233aa86
+      - FIREBASE_API_KEY=AIzaSyCGRkGovgvVU53g5QyoxYIXIO5_whzYXds
+      - FIREBASE_AUTH_DOMAIN=clarity-test-task.firebaseapp.com
+      - FIREBASE_PROJECT_ID=clarity-test-task
+      - FIREBASE_STORAGE_BUCKET=gs://clarity-test-task.appspot.com/
+      - FIREBASE_MESSAGING_SENDER_ID=494256166544
+      - FIREBASE_APP_ID=1:494256166544:web:8706cd9db72c50271d2a15
+      - FIREBASE_MEASUREMENT_ID=G-H9FNFJY2X5
+    networks:
+      - clarity-test-task
+    volumes:
+      - ./apps/api/src:/app/apps/api/src
+      - mailer-volume:/app/packages/mailer
+    ports:
+      - 3001:3001
+    depends_on:
+      - auth-mongo
+  api:
+    container_name: clarity-test-task-api
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+      target: runner
+      args:
+        NODE_ENV: production
+        APP_ENV: production
+        MONGO_URI: mongodb+srv://alexey-gerasimchuk:EXseVTMMo7kDZsCy@clarity-test-task.nw4gxnq.mongodb.net/?retryWrites=true&w=majority&appName=AtlasApp
+        MONGO_DB_NAME: clarity-test-task
+        REDIS_URI: redis://default:1HDE3BEMkBrZrbmoJPXTEN9AflMqcAVP@redis-10064.c250.eu-central-1-1.ec2.cloud.redislabs.com:10064
+        API_URL: https://api.ship-test-task.cluster.ws
+        WEB_URL: https://web.ship-test-task.cluster.ws
+        STRIPE_PUBLISHABLE_KEY: pk_test_51NsOwQF7lgekW04Hbap13yStIKr3P4uReINw37aPggrcaqP7DRhGlXOwZ9LdOwVn8QmBdPyOGKjB04lnz5HbwkTr00jPdLrn6e
+        STRIPE_SECRET_KEY: sk_test_51NsOwQF7lgekW04HKyx60dllaMAPrUZiMzuJbdwAJ01ryA4kvieyPOuULdLjEFVokkFbGxioKnG5G5z4sJlScO5I00MW9Nzc0m
+        STRIPE_ENDPOINT_SECRET: whsec_3e023fc3ce3195c0b7919a81d52e310418ac1490017f8610a9747c332233aa86
+        FIREBASE_API_KEY: AIzaSyCGRkGovgvVU53g5QyoxYIXIO5_whzYXds
+        FIREBASE_AUTH_DOMAIN: clarity-test-task.firebaseapp.com
+        FIREBASE_PROJECT_ID: clarity-test-task
+        FIREBASE_STORAGE_BUCKET: gs://clarity-test-task.appspot.com/
+        FIREBASE_MESSAGING_SENDER_ID: 494256166544
+        FIREBASE_APP_ID: 1:494256166544:web:8706cd9db72c50271d2a15
+        FIREBASE_MEASUREMENT_ID: G-H9FNFJY2X5
+    environment:
+      - MONGO_URI=mongodb+srv://alexey-gerasimchuk:EXseVTMMo7kDZsCy@clarity-test-task.nw4gxnq.mongodb.net/?retryWrites=true&w=majority&appName=AtlasApp
+      - MONGO_DB_NAME=clarity-test-task
+      - REDIS_URI=redis://default:1HDE3BEMkBrZrbmoJPXTEN9AflMqcAVP@redis-10064.c250.eu-central-1-1.ec2.cloud.redislabs.com:10064
+      - API_URL=http://localhost:4001
+      - WEB_URL=http://localhost:3002
+      - STRIPE_PUBLISHABLE_KEY=pk_test_51NsOwQF7lgekW04Hbap13yStIKr3P4uReINw37aPggrcaqP7DRhGlXOwZ9LdOwVn8QmBdPyOGKjB04lnz5HbwkTr00jPdLrn6e
+      - STRIPE_SECRET_KEY=sk_test_51NsOwQF7lgekW04HKyx60dllaMAPrUZiMzuJbdwAJ01ryA4kvieyPOuULdLjEFVokkFbGxioKnG5G5z4sJlScO5I00MW9Nzc0m
+      - STRIPE_ENDPOINT_SECRET=whsec_3e023fc3ce3195c0b7919a81d52e310418ac1490017f8610a9747c332233aa86
+      - FIREBASE_API_KEY=AIzaSyCGRkGovgvVU53g5QyoxYIXIO5_whzYXds
+      - FIREBASE_AUTH_DOMAIN=clarity-test-task.firebaseapp.com
+      - FIREBASE_PROJECT_ID=clarity-test-task
+      - FIREBASE_STORAGE_BUCKET=gs://clarity-test-task.appspot.com/
+      - FIREBASE_MESSAGING_SENDER_ID=494256166544
+      - FIREBASE_APP_ID=1:494256166544:web:8706cd9db72c50271d2a15
+      - FIREBASE_MEASUREMENT_ID=G-H9FNFJY2X5
+    networks:
+      - clarity-test-task
+    volumes:
+      - ./apps/api/src:/app/apps/api/src
+      - mailer-volume:/app/packages/mailer
+    ports:
+      - 4001:4001
+    depends_on:
+      - api-mongo
+  auth-web:
+    container_name: clarity-test-task-web
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
+      target: runner
+      args:
+        NODE_ENV: production
+        APP_ENV: production
+    volumes:
+      - ./apps/web/src:/app/apps/web/src
+      - ./apps/web/public:/app/apps/web/public
+    networks:
+      - clarity-test-task
+    ports:
+      - 3002:3002
+    depends_on:
+      - auth-mongo
+      - auth
+  api-web:
+    container_name: clarity-test-task-web
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
+      target: runner
+      args:
+        NODE_ENV: production
+        APP_ENV: production
+    volumes:
+      - ./apps/web/src:/app/apps/web/src
+      - ./apps/web/public:/app/apps/web/public
+    networks:
+      - clarity-test-task
+    ports:
+      - 4002:3002
+    depends_on:
+      - api-mongo
+      - api
+networks:
+  clarity-test-task:
+    name: clarity-test-task-network
+
+volumes:
+  mongodb:
+  mongodb-cfg:
+  mailer-volume:

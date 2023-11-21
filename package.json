@@ -1,0 +1,19 @@
+{
+  "name": "clarity-test-task",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "infra": "bash ./bin/start.sh mongo redis mongo-replicator",
+    "turbo-start": "turbo run development --filter=\"./apps/*\" --filter=\"./packages/*\"",
+    "docker": "bash ./bin/start.sh",
+    "start": "bash ./bin/run-all.sh",
+    "prepare": "husky install"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=20.7.0"
+  }
+}

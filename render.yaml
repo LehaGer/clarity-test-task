@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: clarity-test-task-api
+    runtime: docker
+    plan: free
+    dockerfilePath: apps/api/Dockerfile
+    buildFilter:
+      paths:
+        - apps/api/**
+  - type: web
+    name: clarity-test-task-api-web
+    runtime: docker
+    plan: free
+    dockerfilePath: apps/web/Dockerfile
+    buildFilter:
+      paths:
+        - apps/api-web/**
+  - type: web
+    name: clarity-test-task-auth
+    runtime: docker
+    plan: free
+    dockerfilePath: apps/api/Dockerfile
+    buildFilter:
+      paths:
+        - apps/auth/**
+  - type: web
+    name: clarity-test-task-auth-web
+    runtime: docker
+    plan: free
+    dockerfilePath: apps/web/Dockerfile
+    buildFilter:
+      paths:
+        - apps/auth-web/**
